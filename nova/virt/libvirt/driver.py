@@ -445,7 +445,7 @@ class LibvirtDriver(driver.ComputeDriver):
             return False
 
     def legacy_nwinfo(self):
-        return True
+        return False
 
     # TODO(Shrews): Remove when libvirt Bugzilla bug # 836647 is fixed.
     def list_instance_ids(self):
@@ -477,13 +477,13 @@ class LibvirtDriver(driver.ComputeDriver):
 
     def plug_vifs(self, instance, network_info):
         """Plug VIFs into networks."""
-        for (network, mapping) in network_info:
-            self.vif_driver.plug(instance, (network, mapping))
+        for vif in network_info:
+            self.vif_driver.plug(instance, vif)
 
     def unplug_vifs(self, instance, network_info):
         """Unplug VIFs from networks."""
-        for (network, mapping) in network_info:
-            self.vif_driver.unplug(instance, (network, mapping))
+        for vif in network_info:
+            self.vif_driver.unplug(instance, vif)
 
     def _destroy(self, instance):
         try:
@@ -1894,10 +1894,8 @@ class LibvirtDriver(driver.ComputeDriver):
                                                  inst_type):
             guest.add_device(cfg)
 
-        for (network, mapping) in network_info:
-            cfg = self.vif_driver.get_config(instance,
-                                             network, mapping,
-                                             image_meta)
+        for vif in network_info:
+            cfg = self.vif_driver.get_config(instance, vif, image_meta)
             guest.add_device(cfg)
 
         if CONF.libvirt_type == "qemu" or CONF.libvirt_type == "kvm":
