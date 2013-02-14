@@ -65,7 +65,8 @@ class BareMetalPXETestCase(bm_db_base.BMDBTestCase):
         self.context = utils.get_test_admin_context()
         self.test_block_device_info = None,
         self.instance = utils.get_test_instance()
-        self.test_network_info = utils.get_test_network_info(),
+        self.test_network_info = utils.get_test_network_info(
+            legacy_model=False),
         self.node_info = bm_db_utils.new_bm_node(
                 id=123,
                 service_host='test_host',
@@ -139,12 +140,12 @@ class PXEClassMethodsTestCase(BareMetalPXETestCase):
             ))
 
     def test_build_network_config(self):
-        net = utils.get_test_network_info(1)
+        net = utils.get_test_network_info(1, legacy_model=False)
         config = pxe.build_network_config(net)
         self.assertIn('eth0', config)
         self.assertNotIn('eth1', config)
 
-        net = utils.get_test_network_info(2)
+        net = utils.get_test_network_info(2, legacy_model=False)
         config = pxe.build_network_config(net)
         self.assertIn('eth0', config)
         self.assertIn('eth1', config)
@@ -155,8 +156,8 @@ class PXEClassMethodsTestCase(BareMetalPXETestCase):
                                     'net-dhcp.ubuntu.template',
                 group='baremetal',
             )
-        net = utils.get_test_network_info()
-        net[0][1]['ips'][0]['ip'] = '1.2.3.4'
+        net = utils.get_test_network_info(legacy_model=False)
+        net[0]['network']['subnets'][0]['ips'][0]['address'] = '1.2.3.4'
         config = pxe.build_network_config(net)
         self.assertIn('iface eth0 inet dhcp', config)
         self.assertNotIn('address 1.2.3.4', config)
@@ -167,11 +168,40 @@ class PXEClassMethodsTestCase(BareMetalPXETestCase):
                                     'net-static.ubuntu.template',
                 group='baremetal',
             )
-        net = utils.get_test_network_info()
-        net[0][1]['ips'][0]['ip'] = '1.2.3.4'
+        net = utils.get_test_network_info(legacy_model=False)
+        net[0]['network']['subnets'][0]['ips'][0]['address'] = '1.2.3.4'
         config = pxe.build_network_config(net)
         self.assertIn('iface eth0 inet static', config)
         self.assertIn('address 1.2.3.4', config)
+
+    def test_build_network_config_static_parameters(self):
+        self.flags(use_ipv6=True)
+        self.flags(
+                net_config_template='$pybasedir/nova/virt/baremetal/'
+                                    'net-static.ubuntu.template',
+                group='baremetal'
+            )
+
+        net = utils.get_test_network_info(legacy_model=False)
+        net[0]['network']['subnets'][0]['cidr'] = '10.1.1.0/24'
+        net[0]['network']['subnets'][0]['gateway']['address'] = '10.1.1.1'
+        net[0]['network']['subnets'][0]['dns'][0]['address'] = '10.1.1.2'
+        net[0]['network']['subnets'][0]['dns'][1]['address'] = '10.1.1.3'
+
+        net[0]['network']['subnets'][1]['cidr'] = 'fc00::/7'
+        net[0]['network']['subnets'][1]['ips'][0]['address'] = 'fc00::1'
+        net[0]['network']['subnets'][1]['gateway']['address'] = 'fc00::2'
+        config = pxe.build_network_config(net)
+
+        self.assertIn('iface eth0 inet static', config)
+        self.assertIn('netmask 255.255.255.0', config)
+        self.assertIn('gateway 10.1.1.1', config)
+        self.assertIn('dns-nameservers 10.1.1.2 10.1.1.3', config)
+
+        self.assertIn('iface eth0 inet6 static', config)
+        self.assertIn('address fc00::1', config)
+        self.assertIn('netmask 7', config)
+        self.assertIn('gateway fc00::2', config)
 
     def test_image_dir_path(self):
         self.assertEqual(
@@ -360,7 +390,7 @@ class PXEPrivateMethodsTestCase(BareMetalPXETestCase):
         self.instance['hostname'] = 'fake hostname'
         files.append(('/etc/hostname', 'fake hostname'))
         self.instance['key_data'] = 'fake ssh key'
-        net_info = utils.get_test_network_info(1)
+        net_info = utils.get_test_network_info(1, legacy_model=False)
         net = pxe.build_network_config(net_info)
         admin_password = 'fake password'
 
