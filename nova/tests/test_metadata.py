@@ -120,8 +120,7 @@ class MetadataTestCase(test.TestCase):
         super(MetadataTestCase, self).setUp()
         self.instance = INSTANCES[0]
         self.flags(use_local=True, group='conductor')
-        fake_network.stub_out_nw_api_get_instance_nw_info(self.stubs,
-                                                          spectacular=True)
+        fake_network.stub_out_nw_api_get_instance_nw_info(self.stubs)
 
     def test_user_data(self):
         inst = copy.copy(self.instance)
@@ -251,8 +250,7 @@ class OpenStackMetadataTestCase(test.TestCase):
         super(OpenStackMetadataTestCase, self).setUp()
         self.instance = INSTANCES[0]
         self.flags(use_local=True, group='conductor')
-        fake_network.stub_out_nw_api_get_instance_nw_info(self.stubs,
-                                                          spectacular=True)
+        fake_network.stub_out_nw_api_get_instance_nw_info(self.stubs)
 
     def test_top_level_listing(self):
         # request for /openstack/<version>/ should show metadata.json
@@ -383,8 +381,7 @@ class MetadataHandlerTestCase(test.TestCase):
     def setUp(self):
         super(MetadataHandlerTestCase, self).setUp()
 
-        fake_network.stub_out_nw_api_get_instance_nw_info(self.stubs,
-                                                          spectacular=True)
+        fake_network.stub_out_nw_api_get_instance_nw_info(self.stubs)
         self.instance = INSTANCES[0]
         self.flags(use_local=True, group='conductor')
         self.mdinst = fake_InstanceMetadata(self.stubs, self.instance,
@@ -549,8 +546,7 @@ class MetadataHandlerTestCase(test.TestCase):
 class MetadataPasswordTestCase(test.TestCase):
     def setUp(self):
         super(MetadataPasswordTestCase, self).setUp()
-        fake_network.stub_out_nw_api_get_instance_nw_info(self.stubs,
-                                                          spectacular=True)
+        fake_network.stub_out_nw_api_get_instance_nw_info(self.stubs)
         self.instance = copy.copy(INSTANCES[0])
         self.flags(use_local=True, group='conductor')
         self.mdinst = fake_InstanceMetadata(self.stubs, self.instance,
