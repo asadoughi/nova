@@ -176,8 +176,7 @@ class ServersControllerTest(test.TestCase):
         self.ips_controller = ips.Controller()
         policy.reset()
         policy.init()
-        fake_network.stub_out_nw_api_get_instance_nw_info(self.stubs,
-                                                          spectacular=True)
+        fake_network.stub_out_nw_api_get_instance_nw_info(self.stubs)
 
     def test_can_check_loaded_extensions(self):
         self.ext_mgr.extensions = {'os-fake': None}
