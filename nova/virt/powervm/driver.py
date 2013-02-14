@@ -198,12 +198,6 @@ class PowerVMDriver(driver.ComputeDriver):
         """Reboots, shuts down or powers up the host."""
         pass
 
-    def legacy_nwinfo(self):
-        """
-        Indicate if the driver requires the legacy network_info format.
-        """
-        return False
-
     def manage_image_cache(self, context, all_instances):
         """
         Manage the driver's local image cache.

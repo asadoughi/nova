@@ -638,8 +638,7 @@ class XenAPIVMTestCase(stubs.XenAPITestBase):
         else:
             instance = db.instance_get(self.context, instance_id)
 
-        network_info = fake_network.fake_get_instance_nw_info(self.stubs,
-                                                              spectacular=True)
+        network_info = fake_network.fake_get_instance_nw_info(self.stubs)
         if empty_dns:
             # NOTE(tr3buchet): this is a terrible way to do this...
             network_info[0]['network']['subnets'][0]['dns'] = []
@@ -1093,8 +1092,7 @@ class XenAPIVMTestCase(stubs.XenAPITestBase):
             'vm_mode': 'hvm',
             'architecture': 'x86-64'}
         instance = db.instance_create(self.context, instance_values)
-        network_info = fake_network.fake_get_instance_nw_info(self.stubs,
-                                                              spectacular=True)
+        network_info = fake_network.fake_get_instance_nw_info(self.stubs)
         image_meta = {'id': IMAGE_VHD,
                       'disk_format': 'vhd'}
         if spawn:
@@ -1275,8 +1273,7 @@ class XenAPIMigrateInstance(stubs.XenAPITestBase):
                               product_brand='XenServer')
 
         conn = xenapi_conn.XenAPIDriver(fake.FakeVirtAPI(), False)
-        network_info = fake_network.fake_get_instance_nw_info(self.stubs,
-                                                              spectacular=True)
+        network_info = fake_network.fake_get_instance_nw_info(self.stubs)
         image_meta = {'id': instance['image_ref'], 'disk_format': 'vhd'}
         base = xenapi_fake.create_vdi('hurr', 'fake')
         base_uuid = xenapi_fake.get_record('VDI', base)['uuid']
@@ -1310,8 +1307,7 @@ class XenAPIMigrateInstance(stubs.XenAPITestBase):
                               product_brand='XenServer')
 
         conn = xenapi_conn.XenAPIDriver(fake.FakeVirtAPI(), False)
-        network_info = fake_network.fake_get_instance_nw_info(self.stubs,
-                                                              spectacular=True)
+        network_info = fake_network.fake_get_instance_nw_info(self.stubs)
         image_meta = {'id': instance['image_ref'], 'disk_format': 'vhd'}
         conn.finish_migration(self.context, self.migration, instance,
                               dict(base_copy='hurr', cow='durr'),
@@ -1332,8 +1328,7 @@ class XenAPIMigrateInstance(stubs.XenAPITestBase):
         self.stubs.Set(stubs.FakeSessionForVMTests,
                        "VDI_resize_online", fake_vdi_resize)
         conn = xenapi_conn.XenAPIDriver(fake.FakeVirtAPI(), False)
-        network_info = fake_network.fake_get_instance_nw_info(self.stubs,
-                                                              spectacular=True)
+        network_info = fake_network.fake_get_instance_nw_info(self.stubs)
         image_meta = {'id': instance['image_ref'], 'disk_format': 'vhd'}
         conn.finish_migration(self.context, self.migration, instance,
                               dict(base_copy='hurr', cow='durr'),
@@ -1348,8 +1343,7 @@ class XenAPIMigrateInstance(stubs.XenAPITestBase):
         self.stubs.Set(stubs.FakeSessionForVMTests,
                        "VDI_resize_online", fake_vdi_resize)
         conn = xenapi_conn.XenAPIDriver(fake.FakeVirtAPI(), False)
-        network_info = fake_network.fake_get_instance_nw_info(self.stubs,
-                                                              spectacular=True)
+        network_info = fake_network.fake_get_instance_nw_info(self.stubs)
         # Resize instance would be determined by the compute call
         image_meta = {'id': instance['image_ref'], 'disk_format': 'vhd'}
         conn.finish_migration(self.context, self.migration, instance,
@@ -2011,13 +2005,12 @@ class XenAPIDom0IptablesFirewallTestCase(stubs.XenAPITestBase):
         instance_ref = db.instance_get(admin_ctxt, instance_ref['id'])
         src_instance_ref = db.instance_get(admin_ctxt, src_instance_ref['id'])
 
-        network_model = fake_network.fake_get_instance_nw_info(self.stubs,
-                                                      1, spectacular=True)
+        network_model = fake_network.fake_get_instance_nw_info(self.stubs, 1)
 
         fake_network.stub_out_nw_api_get_instance_nw_info(self.stubs,
                                       lambda *a, **kw: network_model)
 
-        network_info = network_model.legacy()
+        network_info = network_model
         self.fw.prepare_instance_filter(instance_ref, network_info)
         self.fw.apply_instance_filter(instance_ref, network_info)
 

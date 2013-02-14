@@ -18,6 +18,7 @@
 
 import fixtures
 import mox
+import netaddr
 
 from nova import context
 from nova import db
@@ -37,7 +38,6 @@ from nova.openstack.common.rpc import common as rpc_common
 from nova import test
 from nova.tests import fake_ldap
 from nova.tests import fake_network
-from nova.tests import matchers
 from nova import utils
 
 
@@ -158,53 +158,51 @@ class FlatNetworkTestCase(test.TestCase):
 
         nw_info = fake_get_instance_nw_info(self.stubs, 1, 2)
 
-        for i, (nw, info) in enumerate(nw_info):
+        for i, vif in enumerate(nw_info):
             nid = i + 1
-            check = {'bridge': 'fake_br%d' % nid,
-                     'cidr': '192.168.%s.0/24' % nid,
-                     'cidr_v6': '2001:db8:0:%x::/64' % nid,
-                     'id': '00000000-0000-0000-0000-00000000000000%02d' % nid,
-                     'multi_host': False,
-                     'injected': False,
-                     'bridge_interface': None,
-                     'vlan': None}
+            network = vif['network']
+            subnet_v4 = network['subnets'][0]
+            subnet_v6 = network['subnets'][1]
+            self.assertEqual(network['bridge'], 'fake_br%d' % nid)
+            self.assertEqual(subnet_v4['cidr'], '192.168.%s.0/24' % nid)
+            self.assertEqual(subnet_v6['cidr'], '2001:db8:0:%x::/64' % nid)
+            expected_id = '00000000-0000-0000-0000-00000000000000%02d' % nid
+            self.assertEqual(network['id'], expected_id)
+            self.assertFalse(network.get_meta('multi_host'))
+            self.assertFalse(network.get_meta('injected'))
+            self.assertIsNone(network.get_meta('bridge_interface'))
+            self.assertIsNone(network.get_meta('vlan'))
 
-            self.assertThat(nw, matchers.DictMatches(check))
+            self.assertEqual(subnet_v4.as_netaddr(),
+                             netaddr.IPNetwork('192.168.%s.0/24' % nid))
+            self.assertIsNone(subnet_v4.get_meta('dhcp_server'))
+            self.assertEqual(subnet_v4['dns'][0]['address'],
+                             '192.168.%d.3' % nid)
+            self.assertEqual(subnet_v4['dns'][1]['address'],
+                             '192.168.%d.4' % nid)
+            self.assertEqual(subnet_v4['gateway']['address'],
+                             '192.168.%d.1' % nid)
+            self.assertEqual(subnet_v6['gateway']['address'], 'fe80::def')
+            self.assertEqual(network['label'], 'test%d' % nid)
+            self.assertEqual(vif['address'], 'DE:AD:BE:EF:00:%02x' % nid)
+            self.assertEqual(vif.get_meta('rxtx_cap'), 30)
+            self.assertEqual(vif['type'], net_model.VIF_TYPE_BRIDGE)
+            self.assertIsNone(vif['devname'])
+            self.assertEqual(vif['id'], expected_id)
+            self.assertIsNone(vif.get('ovs_interfaceid'))
+            self.assertIsNone(vif.get('qbh_params'))
+            self.assertIsNone(vif.get('qbg_params'))
+            self.assertFalse(network.get_meta('should_create_vlan'))
+            self.assertFalse(network.get_meta('should_create_bridge'))
 
-            check = {'broadcast': '192.168.%d.255' % nid,
-                     'dhcp_server': '192.168.1.1',
-                     'dns': ['192.168.%d.3' % nid, '192.168.%d.4' % nid],
-                     'gateway': '192.168.%d.1' % nid,
-                     'gateway_v6': 'fe80::def',
-                     'ip6s': 'DONTCARE',
-                     'ips': 'DONTCARE',
-                     'label': 'test%d' % nid,
-                     'mac': 'DE:AD:BE:EF:00:%02x' % nid,
-                     'rxtx_cap': 30,
-                     'vif_type': net_model.VIF_TYPE_BRIDGE,
-                     'vif_devname': None,
-                     'vif_uuid':
-                        '00000000-0000-0000-0000-00000000000000%02d' % nid,
-                     'ovs_interfaceid': None,
-                     'qbh_params': None,
-                     'qbg_params': None,
-                     'should_create_vlan': False,
-                     'should_create_bridge': False}
-            self.assertThat(info, matchers.DictMatches(check))
+            self.assertEqual(subnet_v6['ips'][0]['address'],
+                             '2001:db8:0:1::%x' % nid)
 
-            check = [{'enabled': 'DONTCARE',
-                      'ip': '2001:db8:0:1::%x' % nid,
-                      'netmask': 64,
-                      'gateway': 'fe80::def'}]
-            self.assertThat(info['ip6s'], matchers.DictListMatches(check))
-
-            num_fixed_ips = len(info['ips'])
-            check = [{'enabled': 'DONTCARE',
-                      'ip': '192.168.%d.%03d' % (nid, ip_num + 99),
-                      'netmask': '255.255.255.0',
-                      'gateway': '192.168.%d.1' % nid}
-                      for ip_num in xrange(1, num_fixed_ips + 1)]
-            self.assertThat(info['ips'], matchers.DictListMatches(check))
+            num_fixed_ips = len(subnet_v4['ips'])
+            ip_addresses = set([ip['address'] for ip in subnet_v4['ips']])
+            for ip_num in xrange(1, num_fixed_ips + 1):
+                self.assertIn('192.168.%d.%03d' % (nid, ip_num + 99),
+                              ip_addresses)
 
     def test_validate_networks(self):
         self.mox.StubOutWithMock(db, 'network_get')
