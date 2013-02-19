@@ -62,41 +62,50 @@ def get_injected_network_template(network_info, use_ipv6=CONF.use_ipv6,
 
     :param network_info:
        :py:meth:`~nova.network.manager.NetworkManager.get_instance_nw_info`
-
-    Note: this code actually depends on the legacy network_info, but will
-    convert the type itself if necessary.
     """
-
-    # the code below depends on the legacy 'network_info'
-    if hasattr(network_info, 'legacy'):
-        network_info = network_info.legacy()
 
     nets = []
     ifc_num = -1
     have_injected_networks = False
 
-    for (network_ref, mapping) in network_info:
+    for vif in network_info:
+        network = vif['network']
         ifc_num += 1
 
-        if not network_ref['injected']:
+        if not network.get_meta('injected', False):
+            continue
+        if 'subnets' not in network:
             continue
 
         have_injected_networks = True
-        address = mapping['ips'][0]['ip']
-        netmask = mapping['ips'][0]['netmask']
-        address_v6 = None
-        gateway_v6 = None
-        netmask_v6 = None
+        v4_subnets = [subnet for subnet in network['subnets']
+                      if subnet['version'] == 4]
+        v4_subnets = [subnet for subnet in network['subnets']
+                      if subnet['version'] == 6]
+
+        address = gateway = netmask = broadcast = dns_servers = None
+        address_v6 = gateway_v6 = netmask_v6 = None
+
+        if len(v4_subnets) > 0:
+            subnet = v4_subnets[0]
+            address = subnet['ips'][0]['address']
+            netmask = str(subnet.as_netaddr().netmask)
+            gateway = subnet['gateway']['address']
+            broadcast = str(subnet.as_netaddr().broadcast),
+            dns_servers = [ip['address'] for ip in subnet['dns']]
         if use_ipv6:
-            address_v6 = mapping['ip6s'][0]['ip']
-            netmask_v6 = mapping['ip6s'][0]['netmask']
-            gateway_v6 = mapping['gateway_v6']
+            if len(v6_subnets) > 0:
+                subnet = v6_subnets[0]
+                address_v6 = subnet['ips'][0]['address']
+                netmask_v6 = subnet.as_netaddr()._prefixlen
+                gateway_v6 = subnet['gateway']['address']
+
         net_info = {'name': 'eth%d' % ifc_num,
                'address': address,
                'netmask': netmask,
-               'gateway': mapping['gateway'],
-               'broadcast': mapping['broadcast'],
-               'dns': ' '.join(mapping['dns']),
+               'gateway': gateway,
+               'broadcast': broadcast,
+               'dns': ' '.join(dns_servers),
                'address_v6': address_v6,
                'gateway_v6': gateway_v6,
                'netmask_v6': netmask_v6}
