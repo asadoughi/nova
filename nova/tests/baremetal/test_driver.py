@@ -113,7 +113,7 @@ class BareMetalDriverWithDBTestCase(bm_db_base.BMDBTestCase):
                                                         self.test_instance),
                 injected_files=[('/fake/path', 'hello world')],
                 instance=self.test_instance,
-                network_info=utils.get_test_network_info(),
+                network_info=utils.get_test_network_info(legacy_model=False),
             )
 
     def test_get_host_stats(self):
