@@ -1078,7 +1078,6 @@ class ComputeTestCase(BaseTestCase):
                                  power_state='fake')
 
         fake_nw_model = network_model.NetworkInfo()
-        self.mox.StubOutWithMock(fake_nw_model, 'legacy')
 
         fake_block_dev_info = 'fake_block_dev_info'
         fake_power_state1 = 'fake_power_state1'
