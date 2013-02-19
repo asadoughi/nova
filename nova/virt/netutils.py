@@ -80,11 +80,11 @@ def get_injected_network_template(network_info, use_ipv6=CONF.use_ipv6,
         have_injected_networks = True
         v4_subnets = [subnet for subnet in network['subnets']
                       if subnet['version'] == 4]
-        v4_subnets = [subnet for subnet in network['subnets']
+        v6_subnets = [subnet for subnet in network['subnets']
                       if subnet['version'] == 6]
 
-        address = gateway = netmask = broadcast = dns_servers = None
-        address_v6 = gateway_v6 = netmask_v6 = None
+        address = netmask = gateway = broadcast = dns_servers = None
+        address_v6 = netmask_v6 = gateway_v6 = None
 
         if len(v4_subnets) > 0:
             subnet = v4_subnets[0]
@@ -107,8 +107,8 @@ def get_injected_network_template(network_info, use_ipv6=CONF.use_ipv6,
                'broadcast': broadcast,
                'dns': ' '.join(dns_servers),
                'address_v6': address_v6,
-               'gateway_v6': gateway_v6,
-               'netmask_v6': netmask_v6}
+               'netmask_v6': netmask_v6,
+               'gateway_v6': gateway_v6}
         nets.append(net_info)
 
     if have_injected_networks is False:
