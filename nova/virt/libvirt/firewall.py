@@ -116,15 +116,19 @@ class NWFilterFirewall(base_firewall.FirewallDriver):
         self._ensure_static_filters()
 
         allow_dhcp = False
-        for (network, mapping) in network_info:
-            if mapping['dhcp_server']:
-                allow_dhcp = True
-                break
+        for vif in network_info:
+            if not vif['network'] or not vif['network']['subnets']:
+                continue
+
+            for subnet in vif['network']['subnets']:
+                if subnet.get_meta('dhcp_server'):
+                    allow_dhcp = True
+                    break
 
         base_filter = self.get_base_filter_list(instance, allow_dhcp)
 
-        for (network, mapping) in network_info:
-            nic_id = mapping['mac'].replace(':', '')
+        for vif in network_info:
+            nic_id = vif['address'].replace(':', '')
             instance_filter_name = self._instance_filter_name(instance, nic_id)
             self._define_filter(self._filter_container(instance_filter_name,
                                                        base_filter))
@@ -193,8 +197,8 @@ class NWFilterFirewall(base_firewall.FirewallDriver):
     def unfilter_instance(self, instance, network_info):
         """Clear out the nwfilter rules."""
         instance_name = instance['name']
-        for (network, mapping) in network_info:
-            nic_id = mapping['mac'].replace(':', '')
+        for vif in network_info:
+            nic_id = vif['address'].replace(':', '')
             instance_filter_name = self._instance_filter_name(instance, nic_id)
 
             try:
@@ -222,8 +226,8 @@ class NWFilterFirewall(base_firewall.FirewallDriver):
 
     def instance_filter_exists(self, instance, network_info):
         """Check nova-instance-instance-xxx exists."""
-        for (network, mapping) in network_info:
-            nic_id = mapping['mac'].replace(':', '')
+        for vif in network_info:
+            nic_id = vif['address'].replace(':', '')
             instance_filter_name = self._instance_filter_name(instance, nic_id)
             try:
                 self._conn.nwfilterLookupByName(instance_filter_name)
